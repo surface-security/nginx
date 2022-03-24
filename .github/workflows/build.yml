@@ -1,26 +1,38 @@
 name: build
 
 on:
-  release:
-    types: [created]
   push:
-    branches:
+    branches-ignore:
       - '**'
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        line:
+          - '-l alpine'
+          - ''
+        sprig:
+          - expand: '-e nosprig'
+            buildarg: ''
+          - expand: ''
+            buildarg: '1'
     steps:
     - uses: actions/checkout@v2
-    # - name: Prepare
-    #   id: prepare
-    #   run: |
-    #       TAG=${GITHUB_REF#refs/tags/}
-    #       echo ::set-output name=tag_name::${TAG}
+    - name: Prepare
+      id: prepare
+      run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo ::set-output name=tag_name::${TAG}
     - name: Expand options
-      run: ./install_helpers/expand.py -i ghcr.io/${{ github.repository }} -l alpine -e nosprig -v 1.19.1
+      run: |
+          ./install_helpers/expand.py -vi ghcr.io/${{ github.repository }} \
+                                      ${{ matrix.line }} \
+                                      ${{ matrix.sprig.expand }} \
+                                      ${{ steps.prepare.outputs.tag_name }}
       id: expand-options
 
     - name: Set up QEMU
@@ -41,3 +53,4 @@ jobs:
         tags: ${{ steps.expand-options.outputs.output_tags }}
         build-args: |
             BASE_IMAGE=nginx:${{ steps.expand-options.outputs.base_image }}
+            USESPRIG=${{ matrix.sprig.buildarg }}
