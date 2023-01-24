@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nginx:1.21.6-alpine
+ARG BASE_IMAGE=nginx:1.23.3-alpine
 FROM ${BASE_IMAGE}
 
 RUN --mount=type=bind,src=/install_helpers,target=/install_helpers \
